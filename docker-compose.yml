@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  narrativa_admin:
+    build: ./narrativa_admin
+    environment:
+      - NODE_ENV=${NODE_ENV}
+    env_file:
+      - .env
+
+  narrativa_backend:
+    build: ./narrativa_backend
+    environment:
+      - NODE_ENV=${NODE_ENV}
+    env_file:
+      - .env
+
+  narrativa_frontend:
+    build: ./narrativa_frontend
+    environment:
+      - NODE_ENV=${NODE_ENV}
+    env_file:
+      - .env
+
+  narrativa_ml:
+    build: ./narrativa_ml
+    environment:
+      - NODE_ENV=${NODE_ENV}
+    env_file:
+      - .env

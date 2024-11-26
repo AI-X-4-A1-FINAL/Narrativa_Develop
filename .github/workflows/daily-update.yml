@@ -5,6 +5,9 @@ on:
     - cron: '0 15 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   update-and-refresh:
     runs-on: self-hosted
@@ -14,53 +17,99 @@ jobs:
         with:
           submodules: recursive
           token: ${{ secrets.ACTION_TOKEN }}
-      
+
       - name: Update submodules
+        shell: pwsh
         run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git submodule update --remote --recursive
-          git add .
-          git diff-index --quiet HEAD || git commit -m "chore: update submodules"
-          git push
-      
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git submodule foreach --recursive "git pull origin main || git pull origin master"
+          git status --porcelain | ForEach-Object {
+              Write-Host "Detected changes in submodule: $_"
+              git add $_
+          }
+          if (git diff-index --quiet HEAD --) {
+              Write-Host "No changes detected. Skipping commit and push."
+          } else {
+              git commit -m "chore: update submodules"
+              git push origin HEAD
+          }
+
       - name: Stop and remove existing containers
+        shell: pwsh
         run: |
-          if [ -f "docker-compose.yml" ]; then
-            docker-compose down --remove-orphans
-          fi
-      
+          if (Test-Path "docker-compose.yml") {
+              Write-Host "Stopping and removing existing containers..."
+              docker-compose down --remove-orphans
+          } else {
+              Write-Host "docker-compose.yml not found. Skipping container removal."
+          }
+
       - name: Pull latest images
+        shell: pwsh
         run: |
-          if [ -f "docker-compose.yml" ]; then
-            docker-compose pull
-          fi
-      
+          if (Test-Path "docker-compose.yml") {
+              Write-Host "Pulling latest Docker images..."
+              docker-compose pull
+          } else {
+              Write-Host "docker-compose.yml not found. Skipping image pull."
+          }
+
       - name: Build and start containers
+        shell: pwsh
         run: |
-          if [ -f "docker-compose.yml" ]; then
-            docker-compose up -d --build
-          fi
-      
+          if (Test-Path "docker-compose.yml") {
+              Write-Host "Building and starting containers..."
+              docker-compose up -d --build
+          } else {
+              Write-Host "docker-compose.yml not found. Skipping build and start."
+          }
+
       - name: Check container status and logs
+        shell: pwsh
         run: |
-          sleep 30  # 컨테이너 시작 대기
+          Start-Sleep -Seconds 30
+          Write-Host "Checking Docker container status..."
           docker ps
-          docker-compose ps
-          docker-compose logs --tail=100
-      
+          if (Test-Path "docker-compose.yml") {
+              docker-compose ps
+              docker-compose logs --tail=100
+          } else {
+              Write-Host "docker-compose.yml not found. Skipping logs."
+          }
+
       - name: Clean up old images
+        shell: pwsh
         run: |
+          Write-Host "Cleaning up unused Docker images..."
           docker system prune -f
-      
-      - name: Notify on failure
+
+      - name: Create deployment status file
         if: failure()
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const issue = await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: 'Container refresh failed',
-              body: `Daily container refresh failed on ${new Date().toISOString()}\n\nPlease check the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for more details.`
-            });
+        shell: pwsh
+        run: |
+          try {
+              $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+              $status = @{
+                  timestamp = $timestamp
+                  status = "FAILED"
+                  repository = $env:GITHUB_REPOSITORY
+                  workflow = $env:GITHUB_WORKFLOW
+                  runId = $env:GITHUB_RUN_ID
+                  runner = $env:COMPUTERNAME
+                  errorMessage = "Deployment process failed. Check the workflow logs for details."
+              } | ConvertTo-Json -Depth 10
+
+              $statusFile = "deployment_status.json"
+              $status | Out-File -FilePath $statusFile -Encoding utf8
+
+              Write-Host "::error::Deployment failed at $timestamp. Status file created: $statusFile"
+              Write-Host "Current Docker Status:"
+              docker ps -a
+              if (Test-Path "docker-compose.yml") {
+                  docker-compose ps
+              }
+          } catch {
+              Write-Host "::error::Failed to create deployment status file. Exception: $_"
+          }
+          exit 1

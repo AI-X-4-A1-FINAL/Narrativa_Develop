@@ -2,7 +2,7 @@ services:
   narrativa_backend:
     build: 
       context: ./narrativa_backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.local
       args:
         AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
         AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
@@ -10,6 +10,7 @@ services:
         AWS_DEFAULT_REGION: ${AWS_REGION}
         S3_BUCKET_NAME: ${S3_BUCKET_NAME}
         S3_FILE_KEY: ${S3_FILE_KEYY}
+        REACT_APP_URI: ${REACT_APP_URI}
     container_name: narrativa_backend
     ports:
       - "8080:8080"
@@ -21,10 +22,11 @@ services:
       - AWS_REGION=${AWS_REGION}
       - AWS_DEFAULT_REGION=${AWS_REGION}
       - S3_BUCKET_NAME=${S3_BUCKET_NAME}
-      - S3_FILE_KEY=${S3_FILE_KEY}
+      - S3_FILE_KEY=${S3_FILE_KEYY}
       - SPRING_DATASOURCE_URL=jdbc:mysql://narrativa_mysql:3306/${MYSQL_DATABASE}
       - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
+      - REACT_APP_URI=${REACT_APP_URI}
     depends_on:
       narrativa_mysql:
         condition: service_healthy  
@@ -33,11 +35,33 @@ services:
     build:
       context: ./narrativa_frontend
       dockerfile: dockerfile.local
+      args:
+        REACT_APP_KAKAO_CLIENT_ID: ${REACT_APP_KAKAO_CLIENT_ID}
+        REACT_APP_KAKAO_AUTH_CODE_PATH: ${REACT_APP_KAKAO_AUTH_CODE_PATH}
+        REACT_APP_KAKAO_REDIRECT_URI: ${REACT_APP_KAKAO_REDIRECT_URI}
+        REACT_APP_GOOGLE_CLIENT_ID: ${REACT_APP_GOOGLE_CLIENT_ID}
+        REACT_APP_GOOGLE_AUTH_CODE_PATH: ${REACT_APP_GOOGLE_AUTH_CODE_PATH}
+        REACT_APP_GOOGLE_REDIRECT_URI: ${REACT_APP_GOOGLE_REDIRECT_URI}
+        REACT_APP_GITHUB_CLIENT_ID: ${REACT_APP_GITHUB_CLIENT_ID}
+        REACT_APP_GITHUB_AUTH_CODE_PATH: ${REACT_APP_GITHUB_AUTH_CODE_PATH}
+        REACT_APP_URI: ${REACT_APP_URI}
+        REACT_APP_SPRING_URI: ${REACT_APP_SPRING_URI}
     container_name: narrativa_frontend
     ports:
       - "3010:3010"
     env_file:
       - .env
+    environment:
+      - REACT_APP_KAKAO_CLIENT_ID=${REACT_APP_KAKAO_CLIENT_ID}
+      - REACT_APP_KAKAO_AUTH_CODE_PATH=${REACT_APP_KAKAO_AUTH_CODE_PATH}
+      - REACT_APP_KAKAO_REDIRECT_URI=${REACT_APP_KAKAO_REDIRECT_URI}
+      - REACT_APP_GOOGLE_CLIENT_ID=${REACT_APP_GOOGLE_CLIENT_ID}
+      - REACT_APP_GOOGLE_AUTH_CODE_PATH=${REACT_APP_GOOGLE_AUTH_CODE_PATH}
+      - REACT_APP_GOOGLE_REDIRECT_URI=${REACT_APP_GOOGLE_REDIRECT_URI}
+      - REACT_APP_GITHUB_CLIENT_ID=${REACT_APP_GITHUB_CLIENT_ID}
+      - REACT_APP_GITHUB_AUTH_CODE_PATH=${REACT_APP_GITHUB_AUTH_CODE_PATH}
+      - REACT_APP_URI=${REACT_APP_URI}
+      - REACT_APP_SPRING_URI=${REACT_APP_SPRING_URI}
     depends_on:
       - narrativa_backend
 

@@ -4,12 +4,12 @@ services:
       context: ./narrativa_backend
       dockerfile: Dockerfile
       args:
-        - AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-        - AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-        - AWS_REGION: ${AWS_REGION}
-        - AWS_DEFAULT_REGION: ${AWS_REGION}
-        - S3_BUCKET_NAME: ${S3_BUCKET_NAME}
-        - S3_FILE_KEY: ${S3_FILE_KEYY}
+        AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+        AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+        AWS_REGION: ${AWS_REGION}
+        AWS_DEFAULT_REGION: ${AWS_REGION}
+        S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+        S3_FILE_KEY: ${S3_FILE_KEYY}
     container_name: narrativa_backend
     ports:
       - "8080:8080"

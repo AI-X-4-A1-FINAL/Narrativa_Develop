@@ -45,7 +45,27 @@ $ git submodule update
 $ git clone --recurse-submodules https://github.com/AI-X-4-A1-FINAL/Narrativa_Develop.git
 ```
 
-#### 3. 서브모듈 관리
+#### 3. 환경 변수 설정
+
++ AWS CLI 설정
+```bash
+$ aws configure
+# AWS Access Key ID 입력
+# AWS Secret Access Key 입력
+# Default region name: ap-northeast-2
+# Default output format: json
+```
+
++ 환경 변수 가져오기
+```bash
+# 필요한 패키지 설치
+$ npm install
+
+# Parameter Store에서 환경 변수 가져오기
+$ npm run fetch-env
+```
+
+#### 4. 서브모듈 관리
 + 서브모듈 업데이트
 > 서브모듈의 내용이 변경되었을 경우 다음 명령어로 최신 변경사항을 가져올 수 있습니다
 ```bash
@@ -57,38 +77,25 @@ $ git submodule foreach git pull origin main
 ```
 
 #### 4. 서비스 실행
-> Docker Compose를 사용하여 전체 서비스를 빌드하고 실행합니다
 ```bash
+# Docker Compose로 서비스 실행
 $ docker-compose up --build
 ```
 
 #### 문제 해결
 
-+ 일반적인 문제
+#### 주의사항
 
-1. 서브모듈 업데이트 실패
++ AWS CLI가 설치되어 있어야 합니다
++ AWS 자격증명이 올바르게 설정되어 있어야 합니다
++ Parameter Store에 필요한 환경변수가 미리 설정되어 있어야 합니다
++ .env 파일은 .gitignore에 포함되어 있으므로 git에 커밋되지 않습니다
 
-   + 로컬 변경사항이 있는지 확인
+#### 문제 해결
 
-   + git status 명령어로 상태 확인
-
-   + 필요시 로컬 변경사항 커밋 또는 스태시
-
-2. Docker 빌드 실패
-
-   + Docker 데몬이 실행 중인지 확인
-
-   + 포트 충돌 여부 확인
-
-   + 로그 확인하여 구체적인 오류 파악
-
-#### 참고사항
-
-+ 서브모듈 업데이트는 정기적으로 수행하는 것이 좋습니다
-
-+ 빌드 전 항상 최신 버전의 코드를 유지하도록 합니다
-
-+ 문제 발생 시 프로젝트 이슈 트래커를 확인하세요
++ 환경변수 가져오기 실패 시: AWS 자격증명 확인
++ 서브모듈 업데이트 실패 시: 로컬 변경사항 확인
++ Docker 빌드 실패 시: 로그 확인 및 환경변수 설정 확인
 
 ## 🗝️ 브랜치 관리 규칙
 

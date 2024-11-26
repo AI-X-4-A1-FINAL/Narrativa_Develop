@@ -1,5 +1,6 @@
 # Node
-node_modules/
+data
+node_modules
 dist/
 
 # Environment
@@ -9,3 +10,5 @@ dist/
 
 # AWS
 .aws/
+
+create-parameters.sh

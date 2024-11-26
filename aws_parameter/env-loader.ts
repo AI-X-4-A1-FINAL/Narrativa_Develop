@@ -1,53 +1,82 @@
-import { ssm } from './aws-config';
-import { GetParametersByPathCommand } from '@aws-sdk/client-ssm';
+import { SSM, Parameter } from '@aws-sdk/client-ssm';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// 내보낼 인터페이스 정의
-export interface EnvironmentVariables {
-    [key: string]: string;
+function sanitizeEnvValue(value: string): string {
+    // 특수문자 처리 및 따옴표로 값 감싸기
+    return `"${value.replace(/"/g, '\\"')}"`;
 }
 
-// 파라미터 가져오는 함수
-async function getParameters(): Promise<EnvironmentVariables> {
-    try {
-        const command = new GetParametersByPathCommand({
-            Path: '/narrativa/dev/',
-            Recursive: true,
-            WithDecryption: true
-        });
-
-        const response = await ssm.send(command);
-        const envVars: EnvironmentVariables = {};
-
-        response.Parameters?.forEach(param => {
-            const key = param.Name?.split('/').pop() || '';
-            envVars[key] = param.Value || '';
-        });
-
-        return envVars;
-    } catch (error) {
-        console.error('Error fetching parameters:', error);
-        throw error;
-    }
-}
-
-// 환경변수 파일 생성 함수를 export
 export async function generateEnvFile(): Promise<void> {
-    try {
-        const parameters = await getParameters();
-        const envContent = Object.entries(parameters)
-            .map(([key, value]) => `${key}=${value}`)
-            .join('\n');
+    console.log('Starting to fetch parameters...');
+    
+    const ssm = new SSM({ region: 'ap-northeast-2' });
+    let allParameters: Parameter[] = [];
+    let nextToken: string | undefined;
 
+    try {
+        do {
+            console.log('Fetching parameters from AWS Parameter Store...');
+            const response = await ssm.getParametersByPath({
+                Path: '/narrativa/dev/',
+                Recursive: true,
+                WithDecryption: true,
+                MaxResults: 10,
+                NextToken: nextToken
+            });
+
+            if (response.Parameters) {
+                allParameters = [...allParameters, ...response.Parameters];
+            }
+            
+            nextToken = response.NextToken;
+            console.log(`Fetched ${response.Parameters?.length || 0} parameters. More: ${nextToken ? 'Yes' : 'No'}`);
+            
+        } while (nextToken);
+
+        console.log('Total parameters received:', allParameters.length);
+
+        if (allParameters.length === 0) {
+            throw new Error('No parameters found');
+        }
+
+        // 환경변수 형식으로 변환
+        const envContent = allParameters.map(param => {
+            const name = param.Name?.split('/').pop() || '';
+            const value = param.Value ? sanitizeEnvValue(param.Value) : '""';
+            console.log(`Processing parameter: ${name}`);
+            return `${name}=${value}`;
+        }).join('\n');
+
+        // .env 파일 생성
         const envPath = path.join(__dirname, '..', '.env');
+        console.log('Writing to .env file at:', envPath);
         fs.writeFileSync(envPath, envContent);
         console.log('Successfully created .env file');
+
+        // 생성된 내용 확인 (비밀값은 가림)
+        console.log('Created environment variables:');
+        allParameters.forEach(param => {
+            const name = param.Name?.split('/').pop() || '';
+            console.log(`${name}=********`);
+        });
+
     } catch (error) {
-        console.error('Failed to create .env file:', error);
+        console.error('Detailed error:', error);
+        if (error instanceof Error) {
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
+        }
         process.exit(1);
     }
 }
 
-// getParameters 함수도 export (필요한 경우 사용)
-export { getParameters };
+// 직접 실행을 위한 코드 추가
+if (require.main === module) {
+    generateEnvFile()
+        .then(() => console.log('Completed successfully'))
+        .catch(error => {
+            console.error('Failed to generate env file:', error);
+            process.exit(1);
+        });
+}

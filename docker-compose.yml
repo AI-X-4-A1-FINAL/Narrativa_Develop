@@ -1,21 +1,38 @@
-version: '3.8'
-
 services:
   narrativa_backend:
-    build: ./narrativa_backend
+    build: 
+      context: ./narrativa_backend
+      dockerfile: Dockerfile
+      args:
+        AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+        AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+        AWS_REGION: ${AWS_REGION}
+        AWS_DEFAULT_REGION: ${AWS_REGION}
+        S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+        S3_FILE_KEY: ${S3_FILE_KEYY}
     container_name: narrativa_backend
     ports:
       - "8080:8080"
     env_file:
       - .env
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_DEFAULT_REGION=${AWS_REGION}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+      - S3_FILE_KEY=${S3_FILE_KEY}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://narrativa_mysql:3306/${MYSQL_DATABASE}
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
     depends_on:
-      - narrativa_ml
-      - mysql:
-        condition: service_healthy
-    restart: unless-stopped
+      narrativa_mysql:
+        condition: service_healthy  
 
   narrativa_frontend:
-    build: ./narrativa_frontend
+    build:
+      context: ./narrativa_frontend
+      dockerfile: dockerfile.local
     container_name: narrativa_frontend
     ports:
       - "3010:3010"
@@ -25,7 +42,9 @@ services:
       - narrativa_backend
 
   narrativa_admin:
-    build: ./narrativa_admin
+    build:
+      context: ./narrativa_admin
+      dockerfile: Dockerfile
     container_name: narrativa_admin
     ports:
       - "3030:3030"
@@ -42,22 +61,21 @@ services:
     env_file:
       - .env
 
-  mysql:
-    image: mysql:8.4.3
-    container_name: narrativa_mysql
-    ports:
-      - "3306:3306"
+  narrativa_mysql:
+    image: mysql:8.0.40
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    container_name: narrativa_mysql
+    ports:
+      - "3306:3306"
     volumes:
-      - mysql_data:/var/lib/mysql
-      - ./mysql/init:/docker-entrypoint-initdb.d
+      - ./data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
-      interval: 5s
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
       timeout: 5s
       retries: 5
 

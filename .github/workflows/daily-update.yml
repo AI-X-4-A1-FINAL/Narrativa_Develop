@@ -1,0 +1,66 @@
+name: Daily Submodule Update and Container Refresh
+
+on:
+  schedule:
+    - cron: '0 15 * * *'
+  workflow_dispatch:
+
+jobs:
+  update-and-refresh:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          token: ${{ secrets.ACTION_TOKEN }}
+      
+      - name: Update submodules
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git submodule update --remote --recursive
+          git add .
+          git diff-index --quiet HEAD || git commit -m "chore: update submodules"
+          git push
+      
+      - name: Stop and remove existing containers
+        run: |
+          if [ -f "docker-compose.yml" ]; then
+            docker-compose down --remove-orphans
+          fi
+      
+      - name: Pull latest images
+        run: |
+          if [ -f "docker-compose.yml" ]; then
+            docker-compose pull
+          fi
+      
+      - name: Build and start containers
+        run: |
+          if [ -f "docker-compose.yml" ]; then
+            docker-compose up -d --build
+          fi
+      
+      - name: Check container status and logs
+        run: |
+          sleep 30  # 컨테이너 시작 대기
+          docker ps
+          docker-compose ps
+          docker-compose logs --tail=100
+      
+      - name: Clean up old images
+        run: |
+          docker system prune -f
+      
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Container refresh failed',
+              body: `Daily container refresh failed on ${new Date().toISOString()}\n\nPlease check the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for more details.`
+            });

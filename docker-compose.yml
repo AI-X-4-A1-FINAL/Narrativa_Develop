@@ -38,7 +38,7 @@ services:
   narrativa_frontend:
     build:
       context: ./narrativa_frontend
-      dockerfile: dockerfile.local
+      dockerfile: Dockerfile.local
       args:
         REACT_APP_KAKAO_CLIENT_ID: ${REACT_APP_KAKAO_CLIENT_ID}
         REACT_APP_KAKAO_AUTH_CODE_PATH: ${REACT_APP_KAKAO_AUTH_CODE_PATH}

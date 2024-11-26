@@ -72,8 +72,8 @@ $ npm run fetch-env
 # 모든 서브모듈을 최신 버전으로 업데이트
 $ git submodule update --remote
 
-# 또는 각 서브모듈의 main 브랜치에서 풀
-$ git submodule foreach git pull origin main
+# 또는 각 서브모듈의 dev 브랜치에서 풀
+$ git submodule foreach git pull origin dev
 ```
 
 #### 4. 서비스 실행

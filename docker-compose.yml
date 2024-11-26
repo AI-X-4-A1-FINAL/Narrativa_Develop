@@ -29,7 +29,11 @@ services:
       - REACT_APP_URI=${REACT_APP_URI}
     depends_on:
       narrativa_mysql:
-        condition: service_healthy  
+        condition: service_healthy
+    networks:
+      - narrativa_network
+    expose:
+      - "8080"
 
   narrativa_frontend:
     build:
@@ -64,6 +68,10 @@ services:
       - REACT_APP_SPRING_URI=${REACT_APP_SPRING_URI}
     depends_on:
       - narrativa_backend
+    networks:
+      - narrativa_network
+    expose:
+      - "3010"
 
   narrativa_admin:
     build:
@@ -76,6 +84,10 @@ services:
       - .env
     depends_on:
       - narrativa_backend
+    networks:
+      - narrativa_network
+    expose:
+      - "3030"
 
   narrativa_ml:
     build: ./narrativa_ml
@@ -84,6 +96,10 @@ services:
       - "8050:8050"
     env_file:
       - .env
+    networks:
+      - narrativa_network
+    expose:
+      - "8050"
 
   narrativa_mysql:
     image: mysql:8.0.40
@@ -102,6 +118,18 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - narrativa_network
+    expose:
+      - "3306"
+
+networks:
+  narrativa_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
 
 volumes:
   mysql_data:

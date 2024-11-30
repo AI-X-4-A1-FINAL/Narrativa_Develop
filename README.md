@@ -61,7 +61,7 @@ $ aws configure
 # 필요한 패키지 설치
 $ npm install
 
-# Parameter Store에서 환경 변수 가져오기
+# S3 버킷에서 환경변수 가져오기
 $ npm run fetch-env
 ```
 
